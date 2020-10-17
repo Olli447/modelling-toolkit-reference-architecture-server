@@ -2,12 +2,14 @@ class Room {
     id;
     joinedClients;
     model;
+    isNew;
 
     constructor(id, user, model) {
         this.id = id;
         this.joinedClients = [];
         this.addClient(user);
         this.model = model;
+        this.isNew = true;
     }
 
     addClient(user) {
@@ -31,9 +33,10 @@ class Room {
                 return;
             }
         }
+
     }
     hasClients() {
-        return this.joinedClients > 0;
+        return this.joinedClients.length > 0;
     }
 
 }

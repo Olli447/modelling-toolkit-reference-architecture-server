@@ -4,10 +4,12 @@ const User = require("./user");
 class SessionManager {
     users;
     rooms;
+    server;
 
-    constructor() {
+    constructor(server) {
         this.users = [];
         this.rooms = [];
+        this.server = server;
     }
 
     registerClient(websocket) {
@@ -21,7 +23,7 @@ class SessionManager {
         for (let i = 0; i < this.users.length; i++) {
             if (this.users[i].uuid === uuid) {
                 this.removeClientFromAllRooms(uuid);
-                this.users.slice(i, 1);
+                this.users.splice(i, 1);
                 return;
             }
         }
@@ -46,6 +48,7 @@ class SessionManager {
         }
 
         room.addClient(user);
+        room.isNew = false;
         console.log("Client " + clientID + " joined room " + modelID);
     }
     leaveModellingSession(clientID, modelID) {
@@ -71,7 +74,7 @@ class SessionManager {
             const room = this.rooms[i];
             room.removeClient(user)
             console.log("Client " + clientID + " was removed from room " + room.id);
-            if (!room.hasClients()) {
+            if (!room.hasClients() && !room.isNew) {
                 this.removeRoom(room.id);
                 console.log("Room " + room.id + " has been removed (No users)");
             }
@@ -108,13 +111,13 @@ class SessionManager {
     }
     findAllClientsOfRoom(clientID, roomID) {
         const clients = this.findRoom(roomID).joinedClients;
+        const filteredClients = [];
         for (let i = 0; i < clients.length; i++) {
-            if (clients[i].uuid === clientID) {
-                clients.splice(i, 1);
-                return clients;
+            if (clients[i].uuid !== clientID) {
+                filteredClients.push(clients[i]);
             }
         }
-        return clients;
+        return filteredClients;
     }
 
     findRoom(id) {
@@ -125,10 +128,15 @@ class SessionManager {
         }
         throw "No such room";
     }
+    updateModelContent(roomID, content) {
+        const room = this.findRoom(roomID);
+        room.model.updateContent(content);
+    }
     removeRoom(id) {
         for (let i = 0; i < this.rooms.length; i++) {
             if (this.rooms[i].id === id) {
-                this.rooms.slice(i, 1);
+                this.rooms.splice(i, 1);
+                this.server.onRoomRemoved();
                 return;
             }
         }

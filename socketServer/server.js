@@ -9,7 +9,7 @@ class SocketServer{
     sessionManager;
 
     constructor() {
-        this.sessionManager = new SessionManager();
+        this.sessionManager = new SessionManager(this);
         this.start();
     }
 
@@ -52,6 +52,7 @@ class SocketServer{
         });
 
         websocket.on('error', err => console.log(err));
+        this.sayHello(websocket);
     }
 
     startConnection(websocket) {
@@ -182,7 +183,9 @@ class SocketServer{
 
     sendModellingAction(websocket, clientID, modelID, data) {
         try {
-            for (const user of this.sessionManager.findAllClientsOfRoom(clientID, modelID)) {
+            this.sessionManager.updateModelContent(modelID, data);
+            const joinedClients = this.sessionManager.findAllClientsOfRoom(clientID, modelID);
+            for (const user of joinedClients) {
                 user.webSocket.send(JSON.stringify(new Message(
                     'modelling',
                     'Action',
@@ -192,7 +195,7 @@ class SocketServer{
                 )));
             }
             websocket.send(JSON.stringify(new Message(
-                'modelling',
+                'sendModelChange',
                 'Response',
                 undefined,
                 true,
@@ -201,7 +204,7 @@ class SocketServer{
         } catch (e) {
             console.log(e)
             websocket.send(JSON.stringify(new Message(
-                'modelling',
+                'sendModelChange',
                 'Response',
                 undefined,
                 false,
@@ -222,7 +225,7 @@ class SocketServer{
                 )));
             }
             websocket.send(JSON.stringify(new Message(
-                'messages',
+                'sendChatMessage',
                 'Response',
                 undefined,
                 true,
@@ -231,13 +234,39 @@ class SocketServer{
         } catch (e) {
             console.log(e)
             websocket.send(JSON.stringify(new Message(
-                'messages',
+                'sendChatMessage',
                 'Response',
                 undefined,
                 false,
                 e
             )));
         }
+    }
+    onRoomRemoved() {
+        const models = this.sessionManager.getModelMetaInformation()
+        for (const user of this.sessionManager.users) {
+            user.webSocket.send(JSON.stringify(new Message(
+                'models',
+                'Notification',
+                models,
+                undefined,
+                undefined
+            )));
+        }
+    }
+
+    sayHello(websocket) {
+        const data = {
+            uuid: 'System',
+            message: 'Let`s start modelling'
+        }
+        websocket.send(JSON.stringify(new Message(
+            'messages',
+            'Message',
+            data,
+            undefined,
+            undefined
+        )));
     }
 }
 module.exports = SocketServer;
