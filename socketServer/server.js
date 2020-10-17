@@ -157,11 +157,11 @@ class SocketServer{
     joinModellingSession(websocket, clientID, modelID, languageID) {
         try {
             this.sessionManager.removeClientFromAllRooms(clientID);
-            this.sessionManager.joinModellingSession(clientID, modelID, languageID);
+            const data = this.sessionManager.joinModellingSession(clientID, modelID, languageID);
             websocket.send(JSON.stringify(new Message(
                 'joinModel',
                 'Response',
-                undefined,
+                data,
                 true,
                 undefined
             )));
@@ -215,11 +215,15 @@ class SocketServer{
 
     sendChatMessage(websocket, clientID, modelID, data) {
         try {
+            const message = {
+                uuid: clientID,
+                message: data
+            }
             for (const user of this.sessionManager.findAllClientsOfRoom(clientID, modelID)) {
                 user.webSocket.send(JSON.stringify(new Message(
                     'messages',
                     'Message',
-                    data,
+                    message,
                     undefined,
                     undefined
                 )));

@@ -32,8 +32,13 @@ class SessionManager {
 
     createModellingSession(clientID, modelID, model) {
         const user = this.findClient(clientID);
-        const room = new Room(modelID, user, model);
-        this.rooms.push(room);
+        const newRoom = new Room(modelID, user, model);
+        for (const room of this.rooms) {
+            if (room.id === newRoom.id) {
+                throw "Room already exists"
+            }
+        }
+        this.rooms.push(newRoom);
         console.log("Room " + modelID + " was created by " + clientID);
     }
     joinModellingSession(clientID, modelID, languageID) {
@@ -50,6 +55,7 @@ class SessionManager {
         room.addClient(user);
         room.isNew = false;
         console.log("Client " + clientID + " joined room " + modelID);
+        return room.model.content;
     }
     leaveModellingSession(clientID, modelID) {
         const user = this.findClient(clientID);
